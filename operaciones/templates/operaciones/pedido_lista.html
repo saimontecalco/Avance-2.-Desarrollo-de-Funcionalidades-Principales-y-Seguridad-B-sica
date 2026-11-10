@@ -1,0 +1,37 @@
+{% extends 'operaciones/base.html' %}
+{% block contenido %}
+<div class="section">
+  <h2 class="section-title">Listado de pedidos</h2>
+  <div class="actions" style="margin:0 0 16px">
+    <a class="button button-primary" href="{% url 'crear' %}">+ Nuevo pedido</a>
+  </div>
+  {% if pedidos %}
+  <div class="tabla-wrap">
+    <table class="tabla">
+      <thead>
+        <tr><th>#</th><th>Cliente</th><th>Café</th><th>Cantidad</th><th>Total</th><th>Tipo</th><th>Opciones</th></tr>
+      </thead>
+      <tbody>
+      {% for p in pedidos %}
+        <tr>
+          <td>{{ p.pk }}</td>
+          <td>{{ p.nombre_cliente }}</td>
+          <td>{{ p.nombre_cafe }}</td>
+          <td>{{ p.cantidad }}</td>
+          <td>${{ p.total }}</td>
+          <td>{% if p.es_mayorista %}Mayorista{% else %}Regular{% endif %}</td>
+          <td class="opciones">
+            <a class="button button-secondary button-sm" href="{% url 'detalle' p.pk %}">Ver</a>
+            <a class="button button-primary button-sm" href="{% url 'editar' p.pk %}">Editar</a>
+            <a class="button button-danger button-sm" href="{% url 'eliminar' p.pk %}">Eliminar</a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="mensaje">Todavía no hay pedidos. Crea el primero.</p>
+  {% endif %}
+</div>
+{% endblock %}

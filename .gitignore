@@ -1,0 +1,22 @@
+# Entorno virtual y dependencias
+venv/
+.venv/
+env/
+node_modules/
+frontend/dist/
+
+# Secretos y configuración local (NUNCA subir)
+.env
+
+# Base de datos local (se recrea con `python manage.py migrate`)
+db.sqlite3
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editores / sistema
+.vscode/
+.idea/
+.DS_Store

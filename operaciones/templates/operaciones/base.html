@@ -1,0 +1,21 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="{% static 'operaciones/img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'operaciones/css/estilos.css' %}">
+  <title>{% block titulo %}Cafetería: pedidos{% endblock %}</title>
+</head>
+<body>
+<div class="app-root">
+  <div class="container">
+    <h1 class="title"><a href="{% url 'lista' %}">Cafetería como dice el dicho</a></h1>
+    {% for m in messages %}
+      <p class="mensaje{% if m.tags == 'error' %} mensaje-error{% endif %}">{{ m }}</p>
+    {% endfor %}
+    {% block contenido %}{% endblock %}
+  </div>
+</div>
+</body>
+</html>

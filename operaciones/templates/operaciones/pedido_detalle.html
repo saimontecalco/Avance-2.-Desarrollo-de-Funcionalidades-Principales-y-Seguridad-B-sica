@@ -1,0 +1,29 @@
+{% extends 'operaciones/base.html' %}
+{% block contenido %}
+<div class="section">
+  <h2 class="section-title">Resumen del pedido</h2>
+  <div class="ticket">
+    <p class="ticket-titulo">Cafetería</p>
+    <p class="ticket-linea ticket-centro ticket-sub">Pedido #{{ pedido.pk }}</p>
+    <p class="ticket-linea ticket-centro ticket-sub">{{ pedido.fecha|date:"d/m/Y, H:i:s" }}</p>
+    <div class="ticket-separador"></div>
+    <p class="ticket-linea"><span>Cliente</span><span>{{ pedido.nombre_cliente }}</span></p>
+    <p class="ticket-linea"><span>Café</span><span>{{ pedido.nombre_cafe }}</span></p>
+    <p class="ticket-linea"><span>Precio unitario</span><span>${{ pedido.precio_unitario }}</span></p>
+    <p class="ticket-linea"><span>Cantidad</span><span>{{ pedido.cantidad }}</span></p>
+    <div class="ticket-separador"></div>
+    <p class="ticket-linea"><span>Subtotal</span><span>${{ pedido.subtotal }}</span></p>
+    <p class="ticket-linea"><span>Impuesto (16%)</span><span>${{ pedido.impuesto_total }}</span></p>
+    <p class="ticket-linea"><span>Descuento (10%)</span><span>-${{ pedido.descuento_total }}</span></p>
+    <div class="ticket-separador"></div>
+    <p class="ticket-linea ticket-total"><span>Total a pagar</span><span>${{ pedido.total }}</span></p>
+    <p class="ticket-linea ticket-centro ticket-tipo">{% if pedido.es_mayorista %}Pedido mayorista{% else %}Pedido regular{% endif %}</p>
+    <div class="ticket-separador"></div>
+    <p class="ticket-linea ticket-centro ticket-sub">Gracias por tu compra, {{ pedido.nombre_cliente }}</p>
+  </div>
+  <div class="actions">
+    <a class="button button-primary" href="{% url 'editar' pedido.pk %}">Editar</a>
+    <a class="button button-ghost" href="{% url 'lista' %}">Volver al listado</a>
+  </div>
+</div>
+{% endblock %}

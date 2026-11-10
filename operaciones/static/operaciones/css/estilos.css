@@ -1,0 +1,272 @@
+/* ---- Base (antes en index.css) ---- */
+:root {
+  font: 18px/145% system-ui, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0.18px;
+  color-scheme: dark;
+  --borde-app: #2e303a;
+}
+@media (max-width: 1024px) { :root { font-size: 16px; } }
+@media (prefers-color-scheme: light) { :root { --borde-app: #e5e4e7; } }
+
+.app-root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--borde-app);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+h1, h2 { font-weight: 500; }
+h1 { letter-spacing: -1.68px; }
+h2 { line-height: 118%; letter-spacing: -0.24px; }
+p { margin: 0; }
+
+/* ---- Estilos de la cafetería (App.css) ---- */
+/* Paleta: pizarrón de cafetería */
+:root {
+  --pizarron: #1f2a26;
+  --panel: #2a3833;
+  --tiza: #f1efe6;
+  --tiza-suave: #b9c2b8;
+  --mantequilla: #f2c14e;
+  --menta: #8fd3b6;
+  --linea: #56675f;
+}
+
+body {
+  margin: 0;
+  background: var(--pizarron);
+  color: var(--tiza);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 32px 20px 56px;
+  text-align: left;
+}
+
+.title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 0 0 24px;
+  color: var(--mantequilla);
+}
+
+.section {
+  background: var(--panel);
+  border: 2px dashed var(--linea);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.3rem;
+  margin: 0 0 14px;
+  color: var(--tiza);
+}
+
+.label {
+  display: block;
+  margin: 14px 0 6px;
+  color: var(--tiza-suave);
+  font-size: 0.95rem;
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: var(--tiza);
+  background: var(--pizarron);
+  border: 1px solid var(--linea);
+  border-radius: 6px;
+}
+
+.input:focus {
+  outline: 2px solid var(--mantequilla);
+  outline-offset: 1px;
+}
+
+/* Líneas tipo ticket: nombre a la izquierda, valor a la derecha */
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--linea);
+}
+
+.total {
+  font-weight: 700;
+  color: var(--mantequilla);
+}
+
+.badge {
+  display: inline-block;
+  margin: 16px 0 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+
+.badge-mayorista {
+  background: var(--menta);
+  color: #123026;
+}
+
+.badge-regular {
+  border: 1px solid var(--linea);
+  color: var(--tiza-suave);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.button {
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--tiza);
+  outline-offset: 2px;
+}
+
+.button-primary {
+  background: var(--mantequilla);
+  color: #2b2100;
+}
+
+.button-primary:hover {
+  background: #f7d27a;
+}
+
+.button-secondary {
+  background: transparent;
+  color: var(--tiza);
+  border-color: var(--tiza);
+}
+
+.button-secondary:hover {
+  background: rgba(241, 239, 230, 0.1);
+}
+
+.button-ghost {
+  background: transparent;
+  color: var(--tiza-suave);
+  border-color: var(--linea);
+}
+
+.button-ghost:hover {
+  color: var(--tiza);
+  border-color: var(--tiza-suave);
+}
+
+.mensaje {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--menta);
+  background: rgba(143, 211, 182, 0.12);
+}
+
+.mensaje-error {
+  border-left-color: #e07a5f;
+  background: rgba(224, 122, 95, 0.12);
+}
+
+/* Ticket con apariencia de recibo de papel */
+.ticket {
+  margin-top: 18px;
+  padding: 18px 16px;
+  background: #ffffff;
+  color: #2a2a2a;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.ticket-titulo {
+  margin: 0 0 4px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.ticket-sub {
+  color: #6b6b63;
+  font-size: 0.8rem;
+}
+
+.ticket-linea {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+.ticket-centro {
+  justify-content: center;
+  text-align: center;
+}
+
+.ticket-separador {
+  border-top: 1px dashed #9a9a8f;
+  margin: 10px 0;
+}
+
+.ticket-total {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.ticket-tipo {
+  margin-top: 10px;
+  font-style: italic;
+  color: #55665c;
+}
+
+/* ---- Extras para el CRUD ---- */
+.container { max-width: 860px; width: 100%; box-sizing: border-box; }
+.title a { color: inherit; text-decoration: none; }
+a.button { display: inline-block; text-decoration: none; }
+.button-sm { padding: 5px 10px; font-size: 0.8rem; }
+.button-danger { background: #e07a5f; color: #2b0f08; }
+.button-danger:hover { background: #ea9680; }
+.tabla-wrap { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; text-align: left; }
+.tabla th { color: var(--tiza-suave); font-weight: 600; font-size: 0.9rem; }
+.tabla th, .tabla td { padding: 8px 10px; border-bottom: 1px dotted var(--linea); }
+.tabla .opciones { white-space: nowrap; }
+.section .mensaje:first-of-type { margin-top: 0; }
+form.section { display: block; }
+
+/* Selector de café: mismo estilo que los demás campos */
+select.input {
+  cursor: pointer;
+}
+
+select.input option {
+  background: var(--pizarron);
+  color: var(--tiza);
+}

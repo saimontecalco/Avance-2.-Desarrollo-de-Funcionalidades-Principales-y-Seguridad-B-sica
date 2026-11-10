@@ -1,0 +1,15 @@
+{% extends 'operaciones/base.html' %}
+{% block contenido %}
+<form method="post" class="section">
+  {% csrf_token %}
+  <h2 class="section-title">Eliminar pedido #{{ pedido.pk }}</h2>
+  <p class="mensaje mensaje-error">
+    ¿Seguro que quieres eliminar el pedido de {{ pedido.nombre_cliente }}
+    ({{ pedido.cantidad }} × {{ pedido.nombre_cafe }})? Esta acción no se puede deshacer.
+  </p>
+  <div class="actions">
+    <button class="button button-danger" type="submit">Sí, eliminar</button>
+    <a class="button button-ghost" href="{% url 'lista' %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
