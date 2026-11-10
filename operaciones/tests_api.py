@@ -8,7 +8,7 @@ from django.urls import reverse
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
-from .models import Cafe, Pedido
+from .models import Cafe, LineaPedido, Pedido
 
 User = get_user_model()
 CLAVE = 'Cl4ve-Segura-2026!'
@@ -31,8 +31,13 @@ class ApiBase(TestCase):
         c.credentials(HTTP_AUTHORIZATION='Bearer ' + Token.objects.get_or_create(user=usuario)[0].key)
         return c
 
-    def pedido_payload(self, **extra):
-        return {'nombre_cliente': 'Ana', 'cafe': self.cafe.pk, 'cantidad': 2, **extra}
+    def lineas(self, cantidad, cafe=None):
+        return {'lineas': [{'cafe': (cafe or self.cafe).pk, 'cantidad': cantidad}]}
+
+    def pedido_payload(self, cantidad=2, cafe=None, **extra):
+        """Pedido de un café; ``cafe`` puede ser un id inválido para probar errores."""
+        linea = {'cafe': self.cafe.pk if cafe is None else cafe, 'cantidad': cantidad}
+        return {'nombre_cliente': 'Ana', 'lineas': [linea], **extra}
 
 
 class AutenticacionTests(ApiBase):
@@ -168,7 +173,8 @@ class PedidoTests(ApiBase):
         d = r.json()
         self.assertEqual((d['subtotal'], d['impuesto_total'], d['descuento_total'], d['total']),
                          ('20.00', '3.20', '2.00', '21.20'))
-        self.assertEqual((d['cafe_nombre'], d['usuario'], d['es_mayorista']), ('Moka Test', 'ana', False))
+        self.assertEqual((d['lineas'][0]['cafe_nombre'], d['usuario'], d['es_mayorista']), ('Moka Test', 'ana', False))
+        self.assertEqual((d['leche'], d['azucar']), ('ninguna', False))
         self.cafe.refresh_from_db()
         self.assertEqual(self.cafe.stock, 18)
 
@@ -186,10 +192,10 @@ class PedidoTests(ApiBase):
         c = self.cliente(self.ana)
         pk = c.post(reverse('pedido-list'), self.pedido_payload(cantidad=5), format='json').json()['id']
         self.cafe.refresh_from_db(); self.assertEqual(self.cafe.stock, 15)
-        r = c.patch(reverse('pedido-detail', args=[pk]), {'cantidad': 8}, format='json')
+        r = c.patch(reverse('pedido-detail', args=[pk]), self.lineas(8), format='json')
         self.assertEqual((r.status_code, r.json()['cantidad']), (200, 8))
         self.cafe.refresh_from_db(); self.assertEqual(self.cafe.stock, 12)
-        c.patch(reverse('pedido-detail', args=[pk]), {'cantidad': 1}, format='json')
+        c.patch(reverse('pedido-detail', args=[pk]), self.lineas(1), format='json')
         self.cafe.refresh_from_db(); self.assertEqual(self.cafe.stock, 19)
 
     def test_actualizar_con_put_y_cambio_de_cafe(self):
@@ -197,9 +203,9 @@ class PedidoTests(ApiBase):
         c = self.cliente(self.ana)
         pk = c.post(reverse('pedido-list'), self.pedido_payload(cantidad=3), format='json').json()['id']
         r = c.put(reverse('pedido-detail', args=[pk]),
-                  {'nombre_cliente': 'Ana B.', 'cafe': otro.pk, 'cantidad': 2}, format='json')
+                  {'nombre_cliente': 'Ana B.', **self.lineas(2, otro)}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
-        self.assertEqual((r.json()['precio_unitario'], r.json()['subtotal']), ('4.00', '8.00'))
+        self.assertEqual((r.json()['lineas'][0]['precio_unitario'], r.json()['subtotal']), ('4.00', '8.00'))
         self.cafe.refresh_from_db(); otro.refresh_from_db()
         self.assertEqual((self.cafe.stock, otro.stock), (20, 8))  # el anterior se repone
 
@@ -207,20 +213,20 @@ class PedidoTests(ApiBase):
         c = self.cliente(self.ana)
         pk = c.post(reverse('pedido-list'), self.pedido_payload(), format='json').json()['id']
         self.cafe.precio = Decimal('99.00'); self.cafe.save()
-        r = c.patch(reverse('pedido-detail', args=[pk]), {'cantidad': 3}, format='json')
-        self.assertEqual(r.json()['precio_unitario'], '10.00')
+        r = c.patch(reverse('pedido-detail', args=[pk]), self.lineas(3), format='json')
+        self.assertEqual(r.json()['lineas'][0]['precio_unitario'], '10.00')
 
     def test_stock_insuficiente_se_rechaza_sin_cambios(self):
         r = self.cliente(self.ana).post(reverse('pedido-list'), self.pedido_payload(cantidad=21), format='json')
         self.assertEqual(r.status_code, 400)
-        self.assertIn('cantidad', r.json())
+        self.assertIn('lineas', r.json())
         self.cafe.refresh_from_db()
         self.assertEqual((self.cafe.stock, Pedido.objects.count()), (20, 0))
 
     def test_actualizar_por_encima_del_stock_se_rechaza(self):
         c = self.cliente(self.ana)
         pk = c.post(reverse('pedido-list'), self.pedido_payload(cantidad=10), format='json').json()['id']
-        r = c.patch(reverse('pedido-detail', args=[pk]), {'cantidad': 31}, format='json')  # 10 libres + 10 propios = 20
+        r = c.patch(reverse('pedido-detail', args=[pk]), self.lineas(31), format='json')  # 10 libres + 10 propios = 20
         self.assertEqual(r.status_code, 400)
         self.cafe.refresh_from_db(); self.assertEqual(self.cafe.stock, 10)
         self.assertEqual(Pedido.objects.get(pk=pk).cantidad, 10)
@@ -234,7 +240,7 @@ class PedidoTests(ApiBase):
         self.cafe.activo = False; self.cafe.save()
         r = self.cliente(self.ana).post(reverse('pedido-list'), self.pedido_payload(), format='json')
         self.assertEqual(r.status_code, 400)
-        self.assertIn('cafe', r.json())
+        self.assertIn('lineas', r.json())
 
     def test_validaciones_de_datos(self):
         c = self.cliente(self.ana)
@@ -244,8 +250,11 @@ class PedidoTests(ApiBase):
             self.pedido_payload(cantidad=10**30), self.pedido_payload(cantidad=10_001),
             self.pedido_payload(nombre_cliente=''), self.pedido_payload(nombre_cliente='   '),
             self.pedido_payload(nombre_cliente='N' * 101), self.pedido_payload(cafe=9999),
-            self.pedido_payload(cafe='abc'), {'nombre_cliente': 'Ana', 'cantidad': 1},
-            {'cafe': self.cafe.pk, 'cantidad': 1}, {},
+            self.pedido_payload(cafe='abc'), {'nombre_cliente': 'Ana', 'lineas': []}, {'nombre_cliente': 'Ana'},
+            {'lineas': [{'cafe': self.cafe.pk, 'cantidad': 1}]}, {},
+            self.pedido_payload(leche='soya'), self.pedido_payload(azucar='quizas'),
+            {'nombre_cliente': 'Ana', 'lineas': [{'cantidad': 1}]},
+            {'nombre_cliente': 'Ana', 'lineas': 'mocha'},
         ]
         for datos in casos:
             r = c.post(reverse('pedido-list'), datos, format='json')
@@ -270,6 +279,75 @@ class PedidoTests(ApiBase):
         self.assertEqual(c.get(reverse('pedido-list'), {'cafe': 9999}).json()['count'], 0)
 
 
+class PedidoVariosCafesTests(ApiBase):
+    def setUp(self):
+        super().setUp()
+        self.otro = Cafe.objects.create(nombre='Espresso Test', precio=Decimal('4.00'), stock=5)
+        self.c = self.cliente(self.ana)
+
+    def payload(self, **extra):
+        return {'nombre_cliente': 'Ana', 'lineas': [
+            {'cafe': self.cafe.pk, 'cantidad': 2}, {'cafe': self.otro.pk, 'cantidad': 3}], **extra}
+
+    def stock(self):
+        self.cafe.refresh_from_db(); self.otro.refresh_from_db()
+        return self.cafe.stock, self.otro.stock
+
+    def test_pedido_con_varios_cafes_leche_y_azucar(self):
+        r = self.c.post(reverse('pedido-list'), self.payload(leche='almendras', azucar=True), format='json')
+        self.assertEqual(r.status_code, 201, r.content)
+        d = r.json()
+        self.assertEqual([(l['cafe_nombre'], l['cantidad']) for l in d['lineas']],
+                         [('Moka Test', 2), ('Espresso Test', 3)])
+        self.assertEqual((d['leche'], d['azucar'], d['cantidad']), ('almendras', True, 5))
+        self.assertEqual((d['subtotal'], d['total']), ('32.00', '33.92'))  # 20 + 12, +16 % -10 %
+        self.assertEqual(self.stock(), (18, 2))
+
+    def test_las_cuatro_leches_y_sin_leche_son_validas(self):
+        for leche in ('ninguna', 'deslactosada', 'entera', 'semidescremada', 'almendras'):
+            r = self.c.post(reverse('pedido-list'), self.payload(leche=leche), format='json')
+            self.assertEqual((r.status_code, r.json()['leche']), (201, leche))
+            self.otro.stock = 5; self.otro.save(); self.cafe.stock = 20; self.cafe.save()
+
+    def test_un_cafe_sin_existencias_rechaza_todo_el_pedido(self):
+        p = self.payload(); p['lineas'][1]['cantidad'] = 6
+        r = self.c.post(reverse('pedido-list'), p, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('Espresso Test', r.json()['lineas'][0])
+        self.assertEqual((self.stock(), Pedido.objects.count()), ((20, 5), 0))
+
+    def test_cafe_repetido_se_suma(self):
+        p = {'nombre_cliente': 'Ana', 'lineas': [
+            {'cafe': self.cafe.pk, 'cantidad': 1}, {'cafe': self.cafe.pk, 'cantidad': 2}]}
+        r = self.c.post(reverse('pedido-list'), p, format='json')
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual([l['cantidad'] for l in r.json()['lineas']], [3])
+
+    def test_mas_de_cincuenta_lineas_se_rechaza(self):
+        p = {'nombre_cliente': 'Ana', 'lineas': [{'cafe': self.cafe.pk, 'cantidad': 1}] * 51}
+        self.assertEqual(self.c.post(reverse('pedido-list'), p, format='json').status_code, 400)
+
+    def test_patch_de_leche_y_azucar_no_toca_cafes_ni_inventario(self):
+        pk = self.c.post(reverse('pedido-list'), self.payload(), format='json').json()['id']
+        r = self.c.patch(reverse('pedido-detail', args=[pk]), {'leche': 'entera', 'azucar': True}, format='json')
+        self.assertEqual((r.status_code, r.json()['leche'], r.json()['azucar']), (200, 'entera', True))
+        self.assertEqual(len(r.json()['lineas']), 2)
+        self.assertEqual(self.stock(), (18, 2))
+
+    def test_put_quita_un_cafe_y_repone_su_stock(self):
+        pk = self.c.post(reverse('pedido-list'), self.payload(), format='json').json()['id']
+        r = self.c.put(reverse('pedido-detail', args=[pk]),
+                       {'nombre_cliente': 'Ana', **self.lineas(2)}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(len(r.json()['lineas']), 1)
+        self.assertEqual(self.stock(), (18, 5))
+
+    def test_lista_filtra_por_cualquiera_de_sus_cafes_sin_duplicar(self):
+        self.c.post(reverse('pedido-list'), self.payload(), format='json')
+        self.assertEqual(self.c.get(reverse('pedido-list'), {'cafe': self.otro.pk}).json()['count'], 1)
+        self.assertEqual(self.c.get(reverse('pedido-list'), {'search': 'test'}).json()['count'], 1)
+
+
 class AutorizacionPedidosTests(ApiBase):
     def setUp(self):
         super().setUp()
@@ -280,14 +358,14 @@ class AutorizacionPedidosTests(ApiBase):
         luis = self.cliente(self.luis)
         self.assertEqual(luis.get(reverse('pedido-list')).json()['count'], 0)
         self.assertEqual(luis.get(reverse('pedido-detail', args=[self.pk_ana])).status_code, 404)
-        r = luis.patch(reverse('pedido-detail', args=[self.pk_ana]), {'cantidad': 1}, format='json')
+        r = luis.patch(reverse('pedido-detail', args=[self.pk_ana]), self.lineas(1), format='json')
         self.assertEqual(r.status_code, 404)
         self.assertEqual(Pedido.objects.get(pk=self.pk_ana).cantidad, 2)
 
     def test_staff_ve_y_actualiza_todos_los_pedidos(self):
         c = self.cliente(self.admin)
         self.assertEqual(c.get(reverse('pedido-list')).json()['count'], 1)
-        self.assertEqual(c.patch(reverse('pedido-detail', args=[self.pk_ana]), {'cantidad': 4},
+        self.assertEqual(c.patch(reverse('pedido-detail', args=[self.pk_ana]), self.lineas(4),
                                  format='json').status_code, 200)
 
 
@@ -350,8 +428,8 @@ class SeguridadTests(ApiBase):
 
     def test_plantillas_escapan_html_aunque_exista_en_la_base(self):
         # Defensa en profundidad: si algo malicioso llegara a la BD, la salida se escapa.
-        p = Pedido.objects.create(nombre_cliente='<script>alert(1)</script>', cafe=self.cafe,
-                                  cantidad=1, precio_unitario=Decimal('10'))
+        p = Pedido.objects.create(nombre_cliente='<script>alert(1)</script>')
+        LineaPedido.objects.create(pedido=p, cafe=self.cafe, cantidad=1)
         for url in (reverse('lista'), reverse('detalle', args=[p.pk]), reverse('editar', args=[p.pk])):
             r = self.client.get(url)
             self.assertNotContains(r, '<script>alert(1)</script>')
@@ -373,7 +451,7 @@ class SeguridadTests(ApiBase):
                                 fecha='2000-01-01T00:00:00Z', es_mayorista=True), format='json')
         self.assertEqual(r.status_code, 201)
         p = Pedido.objects.get()
-        self.assertEqual((p.precio_unitario, p.usuario, p.es_mayorista), (Decimal('10.00'), self.ana, False))
+        self.assertEqual((p.lineas.get().precio_unitario, p.usuario, p.es_mayorista), (Decimal('10.00'), self.ana, False))
         self.assertNotEqual(p.pk, 777)
 
     def test_json_malformado_da_400_sin_detalles_internos(self):

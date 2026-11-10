@@ -9,7 +9,7 @@
   <div class="tabla-wrap">
     <table class="tabla">
       <thead>
-        <tr><th>#</th><th>Cliente</th><th>Café</th><th>Cantidad</th><th>Total</th><th>Tipo</th><th>Opciones</th></tr>
+        <tr><th>#</th><th>Cliente</th><th>Cafés</th><th>Cantidad</th><th>Leche</th><th>Azúcar</th><th>Total</th><th>Tipo</th><th>Opciones</th></tr>
       </thead>
       <tbody>
       {% for p in pedidos %}
@@ -18,6 +18,8 @@
           <td>{{ p.nombre_cliente }}</td>
           <td>{{ p.nombre_cafe }}</td>
           <td>{{ p.cantidad }}</td>
+          <td>{{ p.get_leche_display }}</td>
+          <td>{% if p.azucar %}Sí{% else %}No{% endif %}</td>
           <td>${{ p.total }}</td>
           <td>{% if p.es_mayorista %}Mayorista{% else %}Regular{% endif %}</td>
           <td class="opciones">

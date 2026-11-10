@@ -52,14 +52,14 @@ class PedidoViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = Pedido.objects.select_related('cafe', 'usuario')
+        qs = Pedido.objects.select_related('usuario').prefetch_related('lineas__cafe')
         if not self.request.user.is_staff:
             qs = qs.filter(usuario=self.request.user)  # ajeno => 404, no filtra existencia
         p = self.request.query_params
         if buscar := p.get('search', '').strip():
-            qs = qs.filter(Q(nombre_cliente__icontains=buscar) | Q(cafe__nombre__icontains=buscar))
+            qs = qs.filter(Q(nombre_cliente__icontains=buscar) | Q(lineas__cafe__nombre__icontains=buscar)).distinct()
         if (cafe := p.get('cafe', '')).isdigit():
-            qs = qs.filter(cafe_id=int(cafe))
+            qs = qs.filter(lineas__cafe_id=int(cafe)).distinct()
         return qs
 
 

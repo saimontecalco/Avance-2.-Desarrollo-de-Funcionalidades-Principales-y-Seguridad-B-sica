@@ -8,9 +8,11 @@
     <p class="ticket-linea ticket-centro ticket-sub">{{ pedido.fecha|date:"d/m/Y, H:i:s" }}</p>
     <div class="ticket-separador"></div>
     <p class="ticket-linea"><span>Cliente</span><span>{{ pedido.nombre_cliente }}</span></p>
-    <p class="ticket-linea"><span>Café</span><span>{{ pedido.nombre_cafe }}</span></p>
-    <p class="ticket-linea"><span>Precio unitario</span><span>${{ pedido.precio_unitario }}</span></p>
-    <p class="ticket-linea"><span>Cantidad</span><span>{{ pedido.cantidad }}</span></p>
+    {% for l in pedido.lineas.all %}
+    <p class="ticket-linea"><span>{{ l.cantidad }} × {{ l.cafe.nombre }} (${{ l.precio_unitario }})</span><span>${{ l.importe }}</span></p>
+    {% endfor %}
+    <p class="ticket-linea"><span>Leche</span><span>{{ pedido.get_leche_display }}</span></p>
+    <p class="ticket-linea"><span>Azúcar</span><span>{% if pedido.azucar %}Sí{% else %}No{% endif %}</span></p>
     <div class="ticket-separador"></div>
     <p class="ticket-linea"><span>Subtotal</span><span>${{ pedido.subtotal }}</span></p>
     <p class="ticket-linea"><span>Impuesto (16%)</span><span>${{ pedido.impuesto_total }}</span></p>

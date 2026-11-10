@@ -38,3 +38,43 @@ th { color:var(--suave); font-weight:600; }
 .agotado { color:var(--error); font-weight:600; }
 .paginador { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px 0; }
 @media (max-width: 520px) { .app { padding: 10px; } }
+
+/* Flujo para pedir */
+.pasos { display:flex; gap:8px; list-style:none; padding:0; margin:8px 0 16px; flex-wrap:wrap; }
+.pasos li { color:var(--suave); display:flex; gap:6px; align-items:center; }
+.pasos li span { display:inline-grid; place-items:center; width:24px; height:24px; border-radius:50%; border:1px solid var(--borde); font-size:.85rem; }
+.pasos li.actual { color:var(--texto); font-weight:600; }
+.pasos li.actual span, .pasos li.hecho span { background:var(--acento); color:#222; border-color:var(--acento); }
+.pasos li + li::before { content:""; width:20px; border-top:1px solid var(--borde); margin-right:2px; }
+.menu { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px; }
+.cafe-tarjeta { background:#1c2421; border:1px solid var(--borde); border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:12px; }
+.cafe-tarjeta h3 { margin:0 0 4px; font-family:Georgia, serif; }
+.cafe-tarjeta p { margin:2px 0; }
+.cafe-tarjeta.elegido { border-color:var(--acento); box-shadow:0 0 0 1px var(--acento); }
+.cafe-tarjeta.agotado-tarjeta { opacity:.6; }
+.precio { color:var(--acento); font-weight:600; font-size:1.1rem; }
+.cantidad { display:flex; align-items:center; justify-content:center; gap:14px; }
+.cantidad .btn { width:44px; height:44px; font-size:1.3rem; padding:0; }
+.cantidad output { min-width:2ch; text-align:center; font-size:1.2rem; font-weight:600; }
+.extras { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; }
+.opciones { border:1px solid var(--borde); border-radius:12px; padding:12px; margin:0; display:flex; flex-direction:column; gap:8px; }
+.opciones legend { padding:0 6px; color:var(--acento); font-weight:600; }
+.opcion { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--borde); border-radius:8px; cursor:pointer; min-height:44px; }
+.opcion input { width:auto; }
+.opcion.elegida { border-color:var(--acento); background:#1c2421; }
+.resumen { list-style:none; padding:0; margin:0 0 12px; }
+.resumen li { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--borde); }
+.pie-asistente { margin-top:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; border-top:1px solid var(--borde); padding-top:12px; }
+.pie-asistente .nota { margin:0; }
+.confirmado { max-width:420px; margin:16px auto; }
+.confirmado h2 { text-align:center; }
+.confirmado .btn { width:100%; margin-top:12px; }
+.ticket { margin:12px 0; padding:18px 16px; background:#fff; color:#2a2a2a; border-radius:6px; font-family:"Courier New", monospace; font-size:.9rem; }
+.ticket p { margin:4px 0; }
+.ticket-titulo { text-align:center; font-size:1.1rem; font-weight:700; }
+.ticket-linea { display:flex; justify-content:space-between; gap:12px; }
+.ticket-centro { justify-content:center; text-align:center; }
+.ticket-sub { color:#6b6b63; font-size:.8rem; }
+.ticket-separador { border-top:1px dashed #9a9a8f; margin:10px 0; }
+.ticket-total { font-weight:700; font-size:1rem; }
+.ticket-tipo { font-style:italic; color:#55665c; }

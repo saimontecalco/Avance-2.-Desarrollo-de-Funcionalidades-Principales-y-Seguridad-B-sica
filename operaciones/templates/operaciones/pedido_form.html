@@ -7,6 +7,10 @@
     <p class="line">Impuesto: {{ porcentaje_impuesto }}%</p>
     <p class="line">Descuento: {{ porcentaje_descuento }}%</p>
 
+    {% if form.multiples_cafes %}
+      <p class="mensaje">Este pedido tiene varios cafés; se cambian desde la aplicación de pedidos. Aquí puedes editar el nombre, la leche y el azúcar.</p>
+    {% endif %}
+
     {% for campo in form %}
       <label class="label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
       {{ campo }}

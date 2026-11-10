@@ -4,7 +4,15 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .forms import PedidoForm
-from .models import Cafe, Pedido
+from .models import Cafe, LineaPedido, Pedido
+from .servicios import ErrorNegocio, actualizar_pedido, crear_pedido, eliminar_pedido
+
+
+def nuevo_pedido(nombre, cafe, cantidad, **extra):
+    """Pedido de un solo café, directo en la base (sin pasar por inventario)."""
+    p = Pedido.objects.create(nombre_cliente=nombre, **extra)
+    LineaPedido.objects.create(pedido=p, cafe=cafe, cantidad=cantidad)
+    return p
 
 
 def crear_cafe(nombre='Café de prueba', precio='6.00', activo=True, stock=100):
@@ -26,30 +34,53 @@ class PedidoModeloTests(TestCase):
         self.cafe = crear_cafe()
 
     def test_totales_de_un_cafe(self):
-        p = Pedido.objects.create(nombre_cliente='Ana', cafe=self.cafe, cantidad=1)
+        p = nuevo_pedido('Ana', self.cafe, 1)
         self.assertEqual(p.subtotal, Decimal('6.00'))
         self.assertEqual(p.impuesto_total, Decimal('0.96'))
         self.assertEqual(p.descuento_total, Decimal('0.60'))
         self.assertEqual(p.total, Decimal('6.36'))
 
     def test_totales_de_siete_cafes(self):
-        p = Pedido.objects.create(nombre_cliente='Ana', cafe=self.cafe, cantidad=7)
+        p = nuevo_pedido('Ana', self.cafe, 7)
         self.assertEqual(p.total, Decimal('44.52'))
 
     def test_precio_depende_del_cafe(self):
         caro = crear_cafe('Caro', '10.00')
-        p = Pedido.objects.create(nombre_cliente='Ana', cafe=caro, cantidad=2)
+        p = nuevo_pedido('Ana', caro, 2)
         self.assertEqual(p.subtotal, Decimal('20.00'))
         self.assertEqual(p.impuesto_total, Decimal('3.20'))   # 16 % sin cambios
         self.assertEqual(p.descuento_total, Decimal('2.00'))  # 10 % sin cambios
         self.assertEqual(p.total, Decimal('21.20'))
 
     def test_mayorista_solo_si_mas_de_cinco(self):
-        self.assertFalse(Pedido(nombre_cliente='A', cafe=self.cafe, cantidad=5).es_mayorista)
-        self.assertTrue(Pedido(nombre_cliente='A', cafe=self.cafe, cantidad=6).es_mayorista)
+        self.assertFalse(nuevo_pedido('A', self.cafe, 5).es_mayorista)
+        self.assertTrue(nuevo_pedido('A', self.cafe, 6).es_mayorista)
+
+    def test_totales_con_varios_cafes(self):
+        otro = crear_cafe('Otro', '4.00')
+        p = nuevo_pedido('Ana', self.cafe, 1)  # 6.00
+        LineaPedido.objects.create(pedido=p, cafe=otro, cantidad=2)  # 8.00
+        self.assertEqual(p.subtotal, Decimal('14.00'))
+        self.assertEqual(p.total, Decimal('14.84'))  # +16 % -10 %
+        self.assertEqual(p.cantidad, 3)
+
+    def test_mayorista_cuenta_cafes_de_todas_las_lineas(self):
+        otro = crear_cafe('Otro', '4.00')
+        p = nuevo_pedido('Ana', self.cafe, 3)
+        LineaPedido.objects.create(pedido=p, cafe=otro, cantidad=3)
+        self.assertTrue(p.es_mayorista)
+
+    def test_leche_y_azucar_por_defecto(self):
+        p = nuevo_pedido('Ana', self.cafe, 1)
+        self.assertEqual((p.leche, p.azucar), ('ninguna', False))
+
+    def test_opciones_de_leche(self):
+        self.assertEqual(
+            {v for v, _ in Pedido.Leche.choices},
+            {'ninguna', 'deslactosada', 'entera', 'semidescremada', 'almendras'})
 
     def test_cambiar_precio_del_menu_no_altera_pedidos_anteriores(self):
-        p = Pedido.objects.create(nombre_cliente='Ana', cafe=self.cafe, cantidad=1)
+        p = nuevo_pedido('Ana', self.cafe, 1)
         self.cafe.precio = Decimal('9.00')
         self.cafe.save()
         p.refresh_from_db()
@@ -76,14 +107,14 @@ class PedidoFormTests(TestCase):
         self.assertIn('cafe', form.errors)
 
     def test_al_editar_se_conserva_el_cafe_aunque_ya_no_este_disponible(self):
-        p = Pedido.objects.create(nombre_cliente='Ana', cafe=self.inactivo, cantidad=1)
+        p = nuevo_pedido('Ana', self.inactivo, 1)
         self.assertIn(self.inactivo, PedidoForm(instance=p).fields['cafe'].queryset)
 
 
 class PedidoCrudTests(TestCase):
     def setUp(self):
         self.cafe = crear_cafe()
-        self.pedido = Pedido.objects.create(nombre_cliente='Luis', cafe=self.cafe, cantidad=2)
+        self.pedido = nuevo_pedido('Luis', self.cafe, 2)
 
     # READ
     def test_lista_muestra_pedidos_y_su_cafe(self):
@@ -124,7 +155,8 @@ class PedidoCrudTests(TestCase):
                              {'nombre_cliente': 'Ana', 'cafe': mocha.pk, 'cantidad': 3})
         self.assertRedirects(r, reverse('lista'))
         nuevo = Pedido.objects.get(nombre_cliente='Ana')
-        self.assertEqual((nuevo.cafe, nuevo.precio_unitario), (mocha, Decimal('7.50')))
+        linea = nuevo.lineas.get()
+        self.assertEqual((linea.cafe, linea.precio_unitario), (mocha, Decimal('7.50')))
         self.assertEqual(nuevo.subtotal, Decimal('22.50'))
 
     def test_crear_rechaza_cantidad_cero_negativa_nombre_vacio_y_sin_cafe(self):
@@ -149,8 +181,8 @@ class PedidoCrudTests(TestCase):
         self.client.post(reverse('editar', args=[self.pedido.pk]),
                          {'nombre_cliente': 'Luis', 'cafe': espresso.pk, 'cantidad': 2})
         self.pedido.refresh_from_db()
-        self.assertEqual((self.pedido.cafe, self.pedido.precio_unitario),
-                         (espresso, Decimal('4.00')))
+        linea = self.pedido.lineas.get()
+        self.assertEqual((linea.cafe, linea.precio_unitario), (espresso, Decimal('4.00')))
 
     def test_editar_sin_cambiar_cafe_conserva_precio_original(self):
         self.cafe.precio = Decimal('9.00')
@@ -158,13 +190,30 @@ class PedidoCrudTests(TestCase):
         self.client.post(reverse('editar', args=[self.pedido.pk]),
                          {'nombre_cliente': 'Luis', 'cafe': self.cafe.pk, 'cantidad': 3})
         self.pedido.refresh_from_db()
-        self.assertEqual(self.pedido.precio_unitario, Decimal('6.00'))
+        self.assertEqual(self.pedido.lineas.get().precio_unitario, Decimal('6.00'))
 
     def test_editar_invalido_no_guarda(self):
         self.client.post(reverse('editar', args=[self.pedido.pk]),
                          {'nombre_cliente': 'Luis', 'cafe': self.cafe.pk, 'cantidad': 0})
         self.pedido.refresh_from_db()
         self.assertEqual(self.pedido.cantidad, 2)
+
+    def test_crear_guarda_leche_y_azucar(self):
+        self.client.post(reverse('crear'), {'nombre_cliente': 'Ana', 'cafe': self.cafe.pk,
+                                            'cantidad': 1, 'leche': 'almendras', 'azucar': 'on'})
+        p = Pedido.objects.get(nombre_cliente='Ana')
+        self.assertEqual((p.leche, p.azucar), ('almendras', True))
+
+    def test_editar_pedido_de_varios_cafes_no_toca_sus_lineas(self):
+        otro = crear_cafe('Otro', '4.00')
+        LineaPedido.objects.create(pedido=self.pedido, cafe=otro, cantidad=1)
+        r = self.client.get(reverse('editar', args=[self.pedido.pk]))
+        self.assertNotContains(r, 'name="cafe"')
+        self.client.post(reverse('editar', args=[self.pedido.pk]),
+                         {'nombre_cliente': 'Luis M.', 'leche': 'entera'})
+        self.pedido.refresh_from_db()
+        self.assertEqual((self.pedido.nombre_cliente, self.pedido.leche), ('Luis M.', 'entera'))
+        self.assertEqual(self.pedido.lineas.count(), 2)
 
     # DELETE
     def test_eliminar_pide_confirmacion_y_no_borra_con_get(self):
@@ -176,3 +225,57 @@ class PedidoCrudTests(TestCase):
         r = self.client.post(reverse('eliminar', args=[self.pedido.pk]))
         self.assertRedirects(r, reverse('lista'))
         self.assertEqual(Pedido.objects.count(), 0)
+
+
+class ServiciosVariosCafesTests(TestCase):
+    def setUp(self):
+        self.a = crear_cafe('A', '10.00', stock=10)
+        self.b = crear_cafe('B', '4.00', stock=10)
+
+    def lineas(self, qa, qb):
+        return [{'cafe': self.a, 'cantidad': qa}, {'cafe': self.b, 'cantidad': qb}]
+
+    def stock(self):
+        self.a.refresh_from_db(); self.b.refresh_from_db()
+        return self.a.stock, self.b.stock
+
+    def test_crear_descuenta_cada_cafe(self):
+        p = crear_pedido(nombre_cliente='Ana', lineas=self.lineas(2, 3), leche='entera', azucar=True)
+        self.assertEqual(self.stock(), (8, 7))
+        self.assertEqual((p.subtotal, p.leche, p.azucar), (Decimal('32.00'), 'entera', True))
+
+    def test_cafe_repetido_se_suma(self):
+        p = crear_pedido(nombre_cliente='Ana', lineas=[{'cafe': self.a, 'cantidad': 1},
+                                                       {'cafe': self.a, 'cantidad': 2}])
+        self.assertEqual(p.lineas.get().cantidad, 3)
+        self.assertEqual(self.stock(), (7, 10))
+
+    def test_sin_lineas_se_rechaza(self):
+        with self.assertRaises(ErrorNegocio):
+            crear_pedido(nombre_cliente='Ana', lineas=[])
+
+    def test_si_un_cafe_no_alcanza_no_se_descuenta_ninguno(self):
+        with self.assertRaises(ErrorNegocio):
+            crear_pedido(nombre_cliente='Ana', lineas=self.lineas(2, 11))
+        self.assertEqual(self.stock(), (10, 10))
+        self.assertEqual(Pedido.objects.count(), 0)
+
+    def test_actualizar_reajusta_agrega_y_quita_lineas(self):
+        p = crear_pedido(nombre_cliente='Ana', lineas=self.lineas(2, 3))
+        actualizar_pedido(p, lineas=[{'cafe': self.a, 'cantidad': 5}])  # +3 de A, B se repone
+        self.assertEqual(self.stock(), (5, 10))
+        self.assertEqual(p.lineas.count(), 1)
+        actualizar_pedido(p, lineas=self.lineas(1, 4))
+        self.assertEqual(self.stock(), (9, 6))
+
+    def test_actualizar_sin_lineas_solo_cambia_leche_y_azucar(self):
+        p = crear_pedido(nombre_cliente='Ana', lineas=self.lineas(2, 3))
+        actualizar_pedido(p, leche='almendras', azucar=True)
+        p.refresh_from_db()
+        self.assertEqual((p.leche, p.azucar, p.lineas.count()), ('almendras', True, 2))
+        self.assertEqual(self.stock(), (8, 7))
+
+    def test_eliminar_repone_todos_los_cafes(self):
+        p = crear_pedido(nombre_cliente='Ana', lineas=self.lineas(2, 3))
+        eliminar_pedido(p)
+        self.assertEqual(self.stock(), (10, 10))

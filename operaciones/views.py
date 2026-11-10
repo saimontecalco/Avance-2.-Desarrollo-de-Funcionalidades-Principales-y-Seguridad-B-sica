@@ -14,12 +14,12 @@ INFO_PRECIOS = {
 def lista(request):
     """READ: listado de pedidos."""
     return render(request, 'operaciones/pedido_lista.html',
-                  {'pedidos': Pedido.objects.select_related('cafe')})
+                  {'pedidos': Pedido.objects.prefetch_related('lineas__cafe')})
 
 
 def detalle(request, pk):
     """READ: ticket de un pedido."""
-    pedido = get_object_or_404(Pedido, pk=pk)
+    pedido = get_object_or_404(Pedido.objects.prefetch_related('lineas__cafe'), pk=pk)
     return render(request, 'operaciones/pedido_detalle.html', {'pedido': pedido})
 
 

@@ -1190,7 +1190,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"Ana Postman\",\n  \"cafe\": {{producto_id}},\n  \"cantidad\": 3\n}",
+              "raw": "{\n  \"nombre_cliente\": \"Ana Postman\",\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 3}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1386,7 +1386,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cantidad\": 7\n}",
+              "raw": "{\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 7}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1491,7 +1491,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"Ana P.\",\n  \"cafe\": {{producto_id}},\n  \"cantidad\": 2\n}",
+              "raw": "{\n  \"nombre_cliente\": \"Ana P.\",\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 2}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1519,7 +1519,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Código 400\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"Error en cantidad\", () => pm.expect(pm.response.json()).to.have.property(\"cantidad\"));"
+                  "pm.test(\"Error en lineas (existencias)\", () => pm.expect(pm.response.json()).to.have.property(\"lineas\"));"
                 ]
               }
             }
@@ -1549,7 +1549,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"Ana\",\n  \"cafe\": {{producto_id}},\n  \"cantidad\": 9999\n}",
+              "raw": "{\n  \"nombre_cliente\": \"Ana\",\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 9999}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1606,7 +1606,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"Ana\",\n  \"cafe\": {{producto_id}},\n  \"cantidad\": 0\n}",
+              "raw": "{\n  \"nombre_cliente\": \"Ana\",\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 0}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1663,7 +1663,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"  \",\n  \"cafe\": {{producto_id}},\n  \"cantidad\": 1\n}",
+              "raw": "{\n  \"nombre_cliente\": \"  \",\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 1}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1720,7 +1720,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"Ana\",\n  \"cafe\": 999999,\n  \"cantidad\": 1\n}",
+              "raw": "{\n  \"nombre_cliente\": \"Ana\",\n  \"lineas\": [{\"cafe\": 999999, \"cantidad\": 1}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1823,7 +1823,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cantidad\": 1\n}",
+              "raw": "{\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 1}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2176,7 +2176,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"<script>alert(1)</script>\",\n  \"cafe\": {{producto_id}},\n  \"cantidad\": 1\n}",
+              "raw": "{\n  \"nombre_cliente\": \"<script>alert(1)</script>\",\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 1}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2233,7 +2233,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"<img src=x onerror=alert(1)>\",\n  \"cafe\": {{producto_id}},\n  \"cantidad\": 1\n}",
+              "raw": "{\n  \"nombre_cliente\": \"<img src=x onerror=alert(1)>\",\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 1}]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2351,7 +2351,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre_cliente\": \"Mass Assignment\",\n  \"cafe\": {{producto_id}},\n  \"cantidad\": 1,\n  \"precio_unitario\": \"0.01\",\n  \"usuario\": \"admin\",\n  \"total\": \"0.01\"\n}",
+              "raw": "{\n  \"nombre_cliente\": \"Mass Assignment\",\n  \"lineas\": [{\"cafe\": {{producto_id}}, \"cantidad\": 1}],\n  \"precio_unitario\": \"0.01\",\n  \"usuario\": \"admin\",\n  \"total\": \"0.01\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { api, getToken, setToken } from './api.js'
 import Acceso from './componentes/Acceso.jsx'
-import Inventario from './componentes/Inventario.jsx'
-import Pedidos from './componentes/Pedidos.jsx'
+import Pedir from './componentes/Pedir.jsx'
+import Ticket from './componentes/Ticket.jsx'
 import { Estado } from './componentes/Ui.jsx'
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
   const [cargando, setCargando] = useState(Boolean(getToken()))
-  const [vista, setVista] = useState('pedidos')
+  const [listo, setListo] = useState(null) // pedido recién confirmado
 
   async function cargarUsuario() {
     setCargando(true)
@@ -24,7 +24,7 @@ export default function App() {
 
   async function cerrarSesion() {
     try { await api('/auth/logout/', { method: 'POST' }) } catch { /* ya expiró */ }
-    setToken(null); setUsuario(null)
+    setToken(null); setUsuario(null); setListo(null)
   }
 
   return (
@@ -33,20 +33,20 @@ export default function App() {
         <h1>☕ Cafetería como dice el dicho</h1>
         {usuario && (
           <div className="sesion">
-            <span>{usuario.username}{usuario.is_staff ? ' · admin' : ''}</span>
+            <span>{usuario.username}</span>
             <button className="btn" onClick={cerrarSesion}>Salir</button>
           </div>
         )}
       </header>
       <main>
         {cargando ? <Estado cargando /> : !usuario ? <Acceso onEntrar={cargarUsuario} /> : (
-          <>
-            <nav aria-label="Secciones">
-              <button className={vista === 'pedidos' ? 'activa' : ''} onClick={() => setVista('pedidos')}>Pedidos</button>
-              <button className={vista === 'inventario' ? 'activa' : ''} onClick={() => setVista('inventario')}>Inventario</button>
-            </nav>
-            {vista === 'pedidos' ? <Pedidos /> : <Inventario usuario={usuario} />}
-          </>
+          listo ? (
+            <section className="tarjeta confirmado">
+              <h2>¡Pedido realizado con éxito!</h2>
+              <Ticket pedido={listo.pedido} restantes={listo.restantes} />
+              <button className="btn primario" onClick={() => setListo(null)}>Hacer otro pedido</button>
+            </section>
+          ) : <Pedir usuario={usuario} onTerminar={setListo} />
         )}
       </main>
     </div>
